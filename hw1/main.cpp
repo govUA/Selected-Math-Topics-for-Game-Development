@@ -5,6 +5,7 @@
 #include "infinity.h"
 #include "zero.h"
 #include "normals.h"
+#include "sign.h"
 
 int main() {
     std::cout << float32ToBits(3.14) << std::endl;
@@ -34,5 +35,8 @@ int main() {
     std::cout << isNormal64(1.05) << std::endl;
     std::cout << isSubnormal32(DBL_MAX/4) << std::endl;
     std::cout << isSubnormal64(DBL_MIN/3) << std::endl;
+    std::cout << "---------------------------------------------" << std::endl;
+    std::cout << isSignBitSet32(-1.23456789) << std::endl;
+    std::cout << isSignBitSet64(9.11) << std::endl;
     return 0;
 }
