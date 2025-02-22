@@ -2,7 +2,7 @@
 #include <cmath>
 #include <cfloat>
 
-#include "classify.h"
+#include "minmax.h"
 #include "sign.h"
 
 int main() {
@@ -27,14 +27,23 @@ int main() {
     std::cout << isNegZero32(-0.0f) << std::endl;
     std::cout << isNegZero64(-INFINITY) << std::endl;
     std::cout << "---------------------------------------------" << std::endl;
-    std::cout << isNaN32(1.0/0.0) << std::endl;
-    std::cout << isNaN64(0.0/0.0) << std::endl;
-    std::cout << isNormal32(DBL_MIN/2) << std::endl;
+    std::cout << isNaN32(1.0 / 0.0) << std::endl;
+    std::cout << isNaN64(0.0 / 0.0) << std::endl;
+    std::cout << isNormal32(DBL_MIN / 2) << std::endl;
     std::cout << isNormal64(1.05) << std::endl;
-    std::cout << isSubnormal32(DBL_MAX/4) << std::endl;
-    std::cout << isSubnormal64(DBL_MIN/3) << std::endl;
+    std::cout << isSubnormal32(DBL_MAX / 4) << std::endl;
+    std::cout << isSubnormal64(DBL_MIN / 3) << std::endl;
     std::cout << "---------------------------------------------" << std::endl;
     std::cout << isSignBitSet32(-1.23456789) << std::endl;
     std::cout << isSignBitSet64(9.11) << std::endl;
+    std::cout << "---------------------------------------------" << std::endl;
+    std::cout << abs32(-1.23456789) << std::endl;
+    std::cout << abs64(9.1142031415926966688) << std::endl;
+    std::cout << min32(-1.23456789, 4.0) << std::endl;
+    std::cout << min64(3.221, 9.1142031415926966688) << std::endl;
+    std::cout << max32(-4444444.0901, -1.23456789) << std::endl;
+    std::cout << max64(0.0 / 0.0, 9.1142031415926966688) << std::endl;
+    std::cout << clamp32(-1.23456789, -INFINITY, INFINITY) << std::endl;
+    std::cout << clamp64(9.1142031415926966688, INFINITY, -INFINITY) << std::endl;
     return 0;
 }
