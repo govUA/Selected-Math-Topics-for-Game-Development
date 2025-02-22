@@ -2,9 +2,7 @@
 #include <cmath>
 #include <cfloat>
 
-#include "infinity.h"
-#include "zero.h"
-#include "normals.h"
+#include "classify.h"
 #include "sign.h"
 
 int main() {
