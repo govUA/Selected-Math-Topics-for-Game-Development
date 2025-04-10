@@ -54,6 +54,30 @@ public:
         data = _mm_sub_ps(data, temp);
         return *this;
     }
+
+    vector4& mul(float scale) {
+        __m128 scale_vec = _mm_set1_ps(scale);
+        data = _mm_mul_ps(data, scale_vec);
+        return *this;
+    }
+
+    vector4& mul(float scale, float w_scale) {
+        __m128 scale_vec = _mm_set_ps(w_scale, scale, scale, scale);
+        data = _mm_mul_ps(data, scale_vec);
+        return *this;
+    }
+
+    vector4& div(float scale) {
+        __m128 scale_vec = _mm_set1_ps(scale);
+        data = _mm_div_ps(data, scale_vec);
+        return *this;
+    }
+
+    vector4& div(float scale, float w_scale) {
+        __m128 scale_vec = _mm_set_ps(w_scale, scale, scale, scale);
+        data = _mm_div_ps(data, scale_vec);
+        return *this;
+    }
 };
 
 bool areEqual(float a, float b, float epsilon = 1e-6f) {
@@ -165,7 +189,55 @@ int main() {
             assert(areEqual(v.w(), 0.0f));
             testPassed();
         }
-        allTestsPassed("addition/subtraction");
+        allTestsPassed("addition/subtraction ");
+    }
+
+    {
+        std::cout << "3. Multiplication/division tests:\n\n";
+        {
+            std::cout << "\t1. Multiply by scalar:\n";
+            vector4 v(2.0f, 3.0f, 4.0f, 5.0f);
+            v.mul(2.0f);
+            assert(areEqual(v.x(), 4.0f));
+            assert(areEqual(v.y(), 6.0f));
+            assert(areEqual(v.z(), 8.0f));
+            assert(areEqual(v.w(), 10.0f));
+            testPassed();
+        }
+
+        {
+            std::cout << "\t2. Multiply by scalar with scale:\n";
+            vector4 v(2.0f, 3.0f, 4.0f, 5.0f);
+            v.mul(3.0f, 2.0f);
+            assert(areEqual(v.x(), 6.0f));
+            assert(areEqual(v.y(), 9.0f));
+            assert(areEqual(v.z(), 12.0f));
+            assert(areEqual(v.w(), 10.0f));
+            testPassed();
+        }
+
+        {
+            std::cout << "\t3. Divide by scalar:\n";
+            vector4 v(4.0f, 6.0f, 8.0f, 10.0f);
+            v.div(2.0f);
+            assert(areEqual(v.x(), 2.0f));
+            assert(areEqual(v.y(), 3.0f));
+            assert(areEqual(v.z(), 4.0f));
+            assert(areEqual(v.w(), 5.0f));
+            testPassed();
+        }
+
+        {
+            std::cout << "\t4. Divide by scalar with scale:\n";
+            vector4 v(6.0f, 9.0f, 12.0f, 10.0f);
+            v.div(3.0f, 2.0f);
+            assert(areEqual(v.x(), 2.0f));
+            assert(areEqual(v.y(), 3.0f));
+            assert(areEqual(v.z(), 4.0f));
+            assert(areEqual(v.w(), 5.0f));
+            testPassed();
+        }
+        allTestsPassed("multiplication/division ");
     }
 
     std::cout << "ALL TESTS PASSED.\n";
