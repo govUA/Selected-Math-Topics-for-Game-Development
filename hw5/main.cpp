@@ -33,50 +33,69 @@ public:
         return _mm_cvtss_f32(_mm_shuffle_ps(data, data, _MM_SHUFFLE(3, 3, 3, 3)));
     }
 
-    vector4& add(const vector4& other) {
+    vector4 &add(const vector4 &other) {
         data = _mm_add_ps(data, other.data);
         return *this;
     }
 
-    vector4& add(float x, float y, float z) {
+    vector4 &add(float x, float y, float z) {
         __m128 temp = _mm_set_ps(0.0f, z, y, x);
         data = _mm_add_ps(data, temp);
         return *this;
     }
 
-    vector4& sub(const vector4& other) {
+    vector4 &sub(const vector4 &other) {
         data = _mm_sub_ps(data, other.data);
         return *this;
     }
 
-    vector4& sub(float x, float y, float z) {
+    vector4 &sub(float x, float y, float z) {
         __m128 temp = _mm_set_ps(0.0f, z, y, x);
         data = _mm_sub_ps(data, temp);
         return *this;
     }
 
-    vector4& mul(float scale) {
+    vector4 &mul(float scale) {
         __m128 scale_vec = _mm_set1_ps(scale);
         data = _mm_mul_ps(data, scale_vec);
         return *this;
     }
 
-    vector4& mul(float scale, float w_scale) {
+    vector4 &mul(float scale, float w_scale) {
         __m128 scale_vec = _mm_set_ps(w_scale, scale, scale, scale);
         data = _mm_mul_ps(data, scale_vec);
         return *this;
     }
 
-    vector4& div(float scale) {
+    vector4 &div(float scale) {
         __m128 scale_vec = _mm_set1_ps(scale);
         data = _mm_div_ps(data, scale_vec);
         return *this;
     }
 
-    vector4& div(float scale, float w_scale) {
+    vector4 &div(float scale, float w_scale) {
         __m128 scale_vec = _mm_set_ps(w_scale, scale, scale, scale);
         data = _mm_div_ps(data, scale_vec);
         return *this;
+    }
+
+    float dot(const vector4 &other) const {
+        __m128 mul = _mm_mul_ps(data, other.data);
+        __m128 shuf = _mm_shuffle_ps(mul, mul, _MM_SHUFFLE(2, 3, 0, 1));
+        __m128 sums = _mm_add_ps(mul, shuf);
+        shuf = _mm_movehl_ps(shuf, sums);
+        sums = _mm_add_ss(sums, shuf);
+        return _mm_cvtss_f32(sums);
+    }
+
+    float dot(float x, float y, float z) const {
+        __m128 temp = _mm_set_ps(0.0f, z, y, x);
+        __m128 mul = _mm_mul_ps(data, temp);
+        __m128 shuf = _mm_shuffle_ps(mul, mul, _MM_SHUFFLE(2, 3, 0, 1));
+        __m128 sums = _mm_add_ps(mul, shuf);
+        shuf = _mm_movehl_ps(shuf, sums);
+        sums = _mm_add_ss(sums, shuf);
+        return _mm_cvtss_f32(sums);
     }
 };
 
@@ -98,7 +117,7 @@ void testPassed() {
     resetConsoleColor();
 }
 
-void allTestsPassed(const std::string& group) {
+void allTestsPassed(const std::string &group) {
     setConsoleColor(10);
     std::cout << "\tAll " << group << "tests passed.\n\n";
     resetConsoleColor();
@@ -145,7 +164,7 @@ int main() {
     {
         std::cout << "2. Addition/subtraction tests:\n\n";
         {
-            std::cout << "\t1. vector addition:\n";
+            std::cout << "\t1. Vector addition:\n";
             vector4 a(1.0f, 2.0f, 3.0f);
             vector4 b(4.0f, 5.0f, 6.0f);
             a.add(b);
@@ -157,7 +176,7 @@ int main() {
         }
 
         {
-            std::cout << "\t2. vector-value addition:\n";
+            std::cout << "\t2. Vector-value addition:\n";
             vector4 v(1.0f, 2.0f, 3.0f);
             v.add(10.0f, 20.0f, 30.0f);
             assert(areEqual(v.x(), 11.0f));
@@ -168,7 +187,7 @@ int main() {
         }
 
         {
-            std::cout << "\t3. vector subtraction:\n";
+            std::cout << "\t3. Vector subtraction:\n";
             vector4 a(10.0f, 20.0f, 30.0f);
             vector4 b(1.0f, 2.0f, 3.0f);
             a.sub(b);
@@ -180,7 +199,7 @@ int main() {
         }
 
         {
-            std::cout << "\t4.vector-value subtraction:\n";
+            std::cout << "\t4. Vector-value subtraction:\n";
             vector4 v(5.0f, 10.0f, 15.0f);
             v.sub(1.0f, 2.0f, 3.0f);
             assert(areEqual(v.x(), 4.0f));
@@ -238,6 +257,36 @@ int main() {
             testPassed();
         }
         allTestsPassed("multiplication/division ");
+    }
+
+    {
+        std::cout << "4. Dot tests:\n\n";
+        {
+            std::cout << "\t1. Dot vector:\n";
+            vector4 a(1.0f, 2.0f, 3.0f, 4.0f);
+            vector4 b(4.0f, 5.0f, 6.0f, 7.0f);
+            float result = a.dot(b);
+            assert(areEqual(result, 60.0f));
+            testPassed();
+        }
+
+        {
+            std::cout << "\t2. Dot value:\n";
+            vector4 a(1.0f, 2.0f, 3.0f, 10.0f);
+            float result = a.dot(4.0f, 5.0f, 6.0f);
+            assert(areEqual(result, 32.0f));
+            testPassed();
+        }
+
+        {
+            std::cout << "\t3. Dot zero:\n";
+            vector4 a(0.0f, 0.0f, 0.0f, 0.0f);
+            vector4 b(1.0f, 2.0f, 3.0f, 4.0f);
+            float result = a.dot(b);
+            assert(areEqual(result, 0.0f));
+            testPassed();
+        }
+        allTestsPassed("dot ");
     }
 
     std::cout << "ALL TESTS PASSED.\n";
