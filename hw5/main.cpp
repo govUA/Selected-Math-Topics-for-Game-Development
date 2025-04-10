@@ -105,6 +105,14 @@ public:
     float magnitude() const {
         return std::sqrt(magnitude_square());
     }
+
+    vector4 &normalise() {
+        float mag = magnitude();
+        if (mag > 0.0f) {
+            this->div(mag);
+        }
+        return *this;
+    }
 };
 
 bool areEqual(float a, float b, float epsilon = 1e-6f) {
@@ -137,7 +145,7 @@ int main() {
     {
         std::cout << "1. Struct base tests:\n\n";
         {
-            std::cout << "\t1. 3-parameter constructor:\n";
+            std::cout << "\t1. 3-parametre constructor:\n";
             vector4 v(1.0f, 2.0f, 3.0f);
             assert(areEqual(v.x(), 1.0f));
             assert(areEqual(v.y(), 2.0f));
@@ -147,7 +155,7 @@ int main() {
         }
 
         {
-            std::cout << "\t2. 4-parameter constructor:\n";
+            std::cout << "\t2. 4-parametre constructor:\n";
             vector4 v(4.0f, 5.0f, 6.0f, 7.0f);
             assert(areEqual(v.x(), 4.0f));
             assert(areEqual(v.y(), 5.0f));
@@ -334,6 +342,62 @@ int main() {
             testPassed();
         }
         allTestsPassed("magnitude ");
+    }
+
+    {
+        std::cout << "6. Normalise tests:\n\n";
+        {
+            std::cout << "\t1. Normalise 3-parameter:\n";
+            vector4 v(3.0f, 4.0f, 0.0f);
+            v.normalise();
+            float expectedX = 3.0f / 5.0f;
+            float expectedY = 4.0f / 5.0f;
+            float expectedZ = 0.0f;
+            float expectedW = 0.0f;
+
+            assert(areEqual(v.x(), expectedX));
+            assert(areEqual(v.y(), expectedY));
+            assert(areEqual(v.z(), expectedZ));
+            assert(areEqual(v.w(), expectedW));
+            assert(areEqual(v.magnitude(), 1.0f));
+            testPassed();
+        }
+
+        {
+            std::cout << "\t2. Normalise 4-parameter:\n";
+            vector4 v(1.0f, 2.0f, 3.0f, 4.0f);
+            float mag = v.magnitude();
+            v.normalise();
+            assert(areEqual(v.magnitude(), 1.0f));
+            assert(areEqual(v.x(), 1.0f / mag));
+            assert(areEqual(v.y(), 2.0f / mag));
+            assert(areEqual(v.z(), 3.0f / mag));
+            assert(areEqual(v.w(), 4.0f / mag));
+            testPassed();
+        }
+
+        {
+            std::cout << "\t3. Normalise zero:\n";
+            vector4 v(0.0f, 0.0f, 0.0f);
+            v.normalise();
+            assert(areEqual(v.x(), 0.0f));
+            assert(areEqual(v.y(), 0.0f));
+            assert(areEqual(v.z(), 0.0f));
+            assert(areEqual(v.w(), 0.0f));
+            testPassed();
+        }
+
+        {
+            std::cout << "\t4. Normalise unit:\n";
+            vector4 v(-0.7f, 0.1f, -0.5f, 0.5);
+            v.normalise();
+            assert(areEqual(v.x(), -0.7f));
+            assert(areEqual(v.y(), 0.1f));
+            assert(areEqual(v.z(), -0.5f));
+            assert(areEqual(v.w(), 0.5f));
+            testPassed();
+        }
+        allTestsPassed("normalise ");
     }
 
     std::cout << "ALL TESTS PASSED.\n";
