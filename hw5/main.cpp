@@ -97,6 +97,14 @@ public:
         sums = _mm_add_ss(sums, shuf);
         return _mm_cvtss_f32(sums);
     }
+
+    float magnitude_square() const {
+        return dot(*this);
+    }
+
+    float magnitude() const {
+        return std::sqrt(magnitude_square());
+    }
 };
 
 bool areEqual(float a, float b, float epsilon = 1e-6f) {
@@ -287,6 +295,45 @@ int main() {
             testPassed();
         }
         allTestsPassed("dot ");
+    }
+
+    {
+        std::cout << "5. Magnitude tests:\n\n";
+        {
+            std::cout << "\t1. Magnitude and magnitude squared:\n";
+            vector4 v(3.0f, 4.0f, 0.0f, 0.0f);
+            float expectedMagSq = 25.0f;
+            float expectedMag = 5.0f;
+
+            assert(areEqual(v.magnitude_square(), expectedMagSq));
+            assert(areEqual(v.magnitude(), expectedMag));
+            testPassed();
+        }
+
+        {
+            std::cout << "\t2. Magnitude with non-zero w:\n";
+            vector4 v(1.0f, 2.0f, 2.0f, 3.0f);
+            assert(areEqual(v.magnitude_square(), 18.0f));
+            assert(areEqual(v.magnitude(), std::sqrt(18.0f)));
+            testPassed();
+        }
+
+        {
+            std::cout << "\t3. Zero-vector magnitude:\n";
+            vector4 v(0.0f, 0.0f, 0.0f, 0.0f);
+            assert(areEqual(v.magnitude_square(), 0.0f));
+            assert(areEqual(v.magnitude(), 0.0f));
+            testPassed();
+        }
+
+        {
+            std::cout << "\t4. Negative-value vector magnitude:\n";
+            vector4 v(-5.0f, 0.0f, 1.0f, 0.0f);
+            assert(areEqual(v.magnitude_square(), 26.0f));
+            assert(areEqual(v.magnitude(), std::sqrt(26.0f)));
+            testPassed();
+        }
+        allTestsPassed("magnitude ");
     }
 
     std::cout << "ALL TESTS PASSED.\n";
