@@ -5,63 +5,76 @@
 #include <fstream>
 #include <cmath>
 #include <cstdlib>
+#include "json.hpp"
+using json = nlohmann::json;
 
 const int WIDTH = 1000;
 const int HEIGHT = 1000;
 
 struct Point {
-    int x, y;
+    double x, y;
     SDL_Color color;
 };
 
 std::vector<Point> loadPoints() {
     std::string filename;
-    std::cout << "Enter the name of the source file:\n";
+    std::cout << "Enter the name of the JSON source file:\n";
     std::cin >> filename;
-    std::vector<Point> points;
-    std::ifstream file(filename);
-    int x, y;
 
-    while (file >> x >> y) {
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Failed to open " << filename << std::endl;
+        return {};
+    }
+
+    json j;
+    file >> j;
+
+    std::vector<Point> points;
+    for (const auto &spot : j["spots"]) {
         Point p;
-        p.x = x;
-        p.y = y;
-        p.color = {static_cast<Uint8>(rand() % 256),
-                   static_cast<Uint8>(rand() % 256),
-                   static_cast<Uint8>(rand() % 256),
-                   255};
+        p.x = spot["x"];
+        p.y = spot["y"];
+        p.color = {
+                static_cast<Uint8>(rand() % 256),
+                static_cast<Uint8>(rand() % 256),
+                static_cast<Uint8>(rand() % 256),
+                255
+        };
         points.push_back(p);
     }
 
     return points;
 }
 
-float euclideanDist(int x1, int y1, int x2, int y2) {
+float euclideanDist(double x1, double y1, double x2, double y2) {
     return std::sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 }
 
-float manhattanDist(int x1, int y1, int x2, int y2) {
+float manhattanDist(double x1, double y1, double x2, double y2) {
     return std::abs(x2 - x1) + std::abs(y2 - y1);
 }
 
-float chebyshevDist(int x1, int y1, int x2, int y2) {
+float chebyshevDist(double x1, double y1, double x2, double y2) {
     return std::max(std::abs(x2 - x1), std::abs(y2 - y1));
 }
 
 void generateVoronoiImage(const std::vector<Point> &points,
                           const std::string &filename,
-                          float (*distanceFunc)(int, int, int, int)) {
+                          float (*distanceFunc)(double, double, double, double)) {
     SDL_Surface *surface = SDL_CreateRGBSurfaceWithFormat(0, WIDTH, HEIGHT, 32, SDL_PIXELFORMAT_RGBA32);
 
     Uint32 *pixels = static_cast<Uint32 *>(surface->pixels);
 
     for (int y = 0; y < HEIGHT; ++y) {
         for (int x = 0; x < WIDTH; ++x) {
+            double px = static_cast<double>(x);
+            double py = static_cast<double>(y);
             float minDist = 1e9;
             SDL_Color bestColor = {0, 0, 0, 255};
 
             for (const auto &p: points) {
-                float dist = distanceFunc(x, y, p.x, p.y);
+                float dist = distanceFunc(px, py, p.x, p.y);
                 if (dist < minDist) {
                     minDist = dist;
                     bestColor = p.color;
