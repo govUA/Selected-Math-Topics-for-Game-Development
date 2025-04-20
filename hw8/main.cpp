@@ -6,8 +6,18 @@
 #include <cmath>
 #include <cstdlib>
 #include <ctime>
+#include <windows.h>
 #include "json.hpp"
+
 using json = nlohmann::json;
+
+WORD WHITE = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+WORD CYAN = FOREGROUND_GREEN | FOREGROUND_BLUE;
+WORD YELLOW = FOREGROUND_RED | FOREGROUND_GREEN;
+WORD PURPLE = FOREGROUND_RED | FOREGROUND_BLUE;
+WORD RED = FOREGROUND_RED | FOREGROUND_INTENSITY;
+WORD GREEN = FOREGROUND_GREEN | FOREGROUND_INTENSITY;
+WORD GRAY = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY;
 
 const int WIDTH = 1000;
 const int HEIGHT = 1000;
@@ -31,11 +41,14 @@ std::vector<Point> loadPoints() {
 
     srand(time(nullptr));
 
+    std::cout << "Reading file content...\n";
+
     json j;
     file >> j;
 
     std::vector<Point> points;
-    for (const auto &spot : j["spots"]) {
+    std::cout << "Mapping points...\n";
+    for (const auto &spot: j["spots"]) {
         Point p;
         p.x = spot["x"];
         p.y = spot["y"];
@@ -69,7 +82,7 @@ void drawSpot(SDL_Surface *surface, int centerX, int centerY, SDL_Color color) {
 
     for (int y = -SPOT_RADIUS; y <= SPOT_RADIUS; ++y) {
         for (int x = -SPOT_RADIUS; x <= SPOT_RADIUS; ++x) {
-            if (x*x + y*y <= SPOT_RADIUS*SPOT_RADIUS) {
+            if (x * x + y * y <= SPOT_RADIUS * SPOT_RADIUS) {
                 int drawX = centerX + x;
                 int drawY = centerY + y;
 
@@ -84,11 +97,14 @@ void drawSpot(SDL_Surface *surface, int centerX, int centerY, SDL_Color color) {
 void generateVoronoiImage(const std::vector<Point> &points,
                           const std::string &filename,
                           float (*distanceFunc)(double, double, double, double),
-                          bool showSpots) {
+                          bool showSpots,
+                          const std::string &quote) {
+    std::cout << "Creating surface...\n";
     SDL_Surface *surface = SDL_CreateRGBSurfaceWithFormat(0, WIDTH, HEIGHT, 32, SDL_PIXELFORMAT_RGBA32);
 
     Uint32 *pixels = static_cast<Uint32 *>(surface->pixels);
 
+    std::cout << quote;
     for (int y = 0; y < HEIGHT; ++y) {
         for (int x = 0; x < WIDTH; ++x) {
             double px = static_cast<double>(x);
@@ -111,6 +127,7 @@ void generateVoronoiImage(const std::vector<Point> &points,
     }
 
     if (showSpots) {
+        std::cout << "Putting spots...\n";
         SDL_Color spotColor = {0, 0, 0, 255};
         for (const auto &p: points) {
             drawSpot(surface, static_cast<int>(p.x), static_cast<int>(p.y), spotColor);
@@ -121,50 +138,70 @@ void generateVoronoiImage(const std::vector<Point> &points,
     SDL_FreeSurface(surface);
 }
 
+void setConsoleColor(WORD color) {
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleTextAttribute(hConsole, color);
+}
+
+void colorString(const std::string &_s, const std::string &s, const std::string &s_, WORD color) {
+    std::cout << _s;
+    setConsoleColor(color);
+    std::cout << s;
+    setConsoleColor(WHITE);
+    std::cout << s_;
+}
+
 bool loop(std::vector<Point> points) {
     static bool showSpots = false;
 
-    std::cout << "Choose distance for Voronoi diagram:\n"
-                 "1. Euclidean\n"
-                 "2. Manhattan\n"
-                 "3. Chebyshev\n"
-                 "4. Choose a different point set\n"
-                 "5. Toggle spot display (currently " << (showSpots ? "ON" : "OFF") << ")\n"
-                 "6. Exit\n";
+    std::cout << "Choose distance for Voronoi diagram:\n";
+    colorString("1. ", "Euclidean ◎", "\n", CYAN);
+    colorString("2. ", "Manhattan ▣", "\n", YELLOW);
+    colorString("3. ", "Chebyshev ◈", "\n", PURPLE);
+    std::cout << "4. Choose a different point set ⇄\n";
+    colorString("5. Toggle spot display (currently ", (showSpots ? "ON" : "OFF"), ") ◉\n", (showSpots ? GREEN : GRAY));
+    std::cout << "6. Exit ⌂\n";
+
     int choice;
     std::cin >> choice;
     bool success = true;
+
     switch (choice) {
         case 1:
-            generateVoronoiImage(points, "voronoi_euclidean.png", euclideanDist, showSpots);
+            generateVoronoiImage(points, "voronoi_euclidean.png", euclideanDist, showSpots, "When in Alexandria...\n");
             break;
         case 2:
-            generateVoronoiImage(points, "voronoi_manhattan.png", manhattanDist, showSpots);
+            generateVoronoiImage(points, "voronoi_manhattan.png", manhattanDist, showSpots,
+                                 "It's hip to be square...\n");
             break;
         case 3:
-            generateVoronoiImage(points, "voronoi_chebyshev.png", chebyshevDist, showSpots);
+            generateVoronoiImage(points, "voronoi_chebyshev.png", chebyshevDist, showSpots,
+                                 "All directions are equal...\n");
             break;
         case 4:
             points = loadPoints();
             break;
         case 5:
             showSpots = !showSpots;
-            std::cout << "Spot display is now " << (showSpots ? "ON" : "OFF") << std::endl;
+            colorString("Spot display is now ", (showSpots ? "ON" : "OFF"), "\n", (showSpots ? GREEN : WHITE));
             break;
         case 6:
             std::cout << "Quitting...\n";
             return false;
         default:
             success = 0;
-            std::cout << "Unknown choice. Try again.\n";
+            colorString("", "Unknown choice.", "\nTry again.\n", RED);
             break;
     }
 
-    if (success) std::cout << "Done!" << std::endl;
+    if (success) {
+        colorString("", "Done!", "\n", GREEN);
+    }
     return loop(points);
 }
 
 int main(int argc, char *argv[]) {
+    SetConsoleOutputCP(CP_UTF8);
     if (SDL_Init(SDL_INIT_VIDEO) != 0 || IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG) {
         std::cerr << "SDL init failed: " << SDL_GetError() << std::endl;
         return 1;
