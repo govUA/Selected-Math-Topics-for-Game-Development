@@ -5,11 +5,13 @@
 #include <fstream>
 #include <cmath>
 #include <cstdlib>
+#include <ctime>
 #include "json.hpp"
 using json = nlohmann::json;
 
 const int WIDTH = 1000;
 const int HEIGHT = 1000;
+const int SPOT_RADIUS = 5;
 
 struct Point {
     double x, y;
@@ -26,6 +28,8 @@ std::vector<Point> loadPoints() {
         std::cerr << "Failed to open " << filename << std::endl;
         return {};
     }
+
+    srand(time(nullptr));
 
     json j;
     file >> j;
@@ -59,9 +63,28 @@ float chebyshevDist(double x1, double y1, double x2, double y2) {
     return std::max(std::abs(x2 - x1), std::abs(y2 - y1));
 }
 
+void drawSpot(SDL_Surface *surface, int centerX, int centerY, SDL_Color color) {
+    Uint32 pixelColor = SDL_MapRGBA(surface->format, color.r, color.g, color.b, color.a);
+    Uint32 *pixels = static_cast<Uint32 *>(surface->pixels);
+
+    for (int y = -SPOT_RADIUS; y <= SPOT_RADIUS; ++y) {
+        for (int x = -SPOT_RADIUS; x <= SPOT_RADIUS; ++x) {
+            if (x*x + y*y <= SPOT_RADIUS*SPOT_RADIUS) {
+                int drawX = centerX + x;
+                int drawY = centerY + y;
+
+                if (drawX >= 0 && drawX < WIDTH && drawY >= 0 && drawY < HEIGHT) {
+                    pixels[drawY * WIDTH + drawX] = pixelColor;
+                }
+            }
+        }
+    }
+}
+
 void generateVoronoiImage(const std::vector<Point> &points,
                           const std::string &filename,
-                          float (*distanceFunc)(double, double, double, double)) {
+                          float (*distanceFunc)(double, double, double, double),
+                          bool showSpots) {
     SDL_Surface *surface = SDL_CreateRGBSurfaceWithFormat(0, WIDTH, HEIGHT, 32, SDL_PIXELFORMAT_RGBA32);
 
     Uint32 *pixels = static_cast<Uint32 *>(surface->pixels);
@@ -87,34 +110,48 @@ void generateVoronoiImage(const std::vector<Point> &points,
         }
     }
 
+    if (showSpots) {
+        SDL_Color spotColor = {0, 0, 0, 255};
+        for (const auto &p: points) {
+            drawSpot(surface, static_cast<int>(p.x), static_cast<int>(p.y), spotColor);
+        }
+    }
+
     IMG_SavePNG(surface, filename.c_str());
     SDL_FreeSurface(surface);
 }
 
 bool loop(std::vector<Point> points) {
-    std::cout << "Chose distance for Voronoi diagram:\n"
-                 "1. Euclidian\n"
+    static bool showSpots = false;
+
+    std::cout << "Choose distance for Voronoi diagram:\n"
+                 "1. Euclidean\n"
                  "2. Manhattan\n"
                  "3. Chebyshev\n"
-                 "4. Chose a different point set\n"
-                 "5. Exit\n";
+                 "4. Choose a different point set\n"
+                 "5. Toggle spot display (currently " << (showSpots ? "ON" : "OFF") << ")\n"
+                 "6. Exit\n";
     int choice;
     std::cin >> choice;
     bool success = true;
     switch (choice) {
         case 1:
-            generateVoronoiImage(points, "voronoi_euclidean.png", euclideanDist);
+            generateVoronoiImage(points, "voronoi_euclidean.png", euclideanDist, showSpots);
             break;
         case 2:
-            generateVoronoiImage(points, "voronoi_manhattan.png", manhattanDist);
+            generateVoronoiImage(points, "voronoi_manhattan.png", manhattanDist, showSpots);
             break;
         case 3:
-            generateVoronoiImage(points, "voronoi_chebyshev.png", chebyshevDist);
+            generateVoronoiImage(points, "voronoi_chebyshev.png", chebyshevDist, showSpots);
             break;
         case 4:
             points = loadPoints();
             break;
         case 5:
+            showSpots = !showSpots;
+            std::cout << "Spot display is now " << (showSpots ? "ON" : "OFF") << std::endl;
+            break;
+        case 6:
             std::cout << "Quitting...\n";
             return false;
         default:
